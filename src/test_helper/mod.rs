@@ -5,7 +5,7 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use httpmock::MockServer;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
-use rand::thread_rng;
+use rand::rng;
 use rsa::RsaPrivateKey;
 use rsa::pkcs8::EncodePrivateKey;
 use rsa::traits::PublicKeyParts;
@@ -73,8 +73,7 @@ pub fn setup_public_key_server(claims: &TokenClaims) -> (String, MockServer) {
     header.kid = Some(KID.to_owned());
     header.typ = Some("JWT".to_owned());
     let bits = 2048;
-    let private_key =
-        RsaPrivateKey::new(&mut thread_rng(), bits).expect("failed to generate a key");
+    let private_key = RsaPrivateKey::new(&mut rng(), bits).expect("failed to generate a key");
     let der = private_key
         .to_pkcs8_pem(rsa::pkcs8::LineEnding::LF)
         .unwrap();
