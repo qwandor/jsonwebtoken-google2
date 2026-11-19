@@ -3,10 +3,11 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use crypto_bigint::{ByteOrder, Encoding};
 use httpmock::MockServer;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
-use rand::thread_rng;
-use rsa::RsaPrivateKey;
+use rand::rng;
+use rsa::PrivateKey;
 use rsa::pkcs8::EncodePrivateKey;
 use rsa::traits::PublicKeyParts;
 use serde::{Deserialize, Serialize};
@@ -73,15 +74,14 @@ pub fn setup_public_key_server(claims: &TokenClaims) -> (String, MockServer) {
     header.kid = Some(KID.to_owned());
     header.typ = Some("JWT".to_owned());
     let bits = 2048;
-    let private_key =
-        RsaPrivateKey::new(&mut thread_rng(), bits).expect("failed to generate a key");
+    let private_key = PrivateKey::new(&mut rng(), bits).expect("failed to generate a key");
     let der = private_key
         .to_pkcs8_pem(rsa::pkcs8::LineEnding::LF)
         .unwrap();
     let key = EncodingKey::from_rsa_pem(der.as_bytes()).unwrap();
     let token = jsonwebtoken::encode::<TokenClaims>(&header, claims, &key).unwrap();
-    let n = URL_SAFE_NO_PAD.encode(private_key.n().to_bytes_be());
-    let e = URL_SAFE_NO_PAD.encode(private_key.e().to_bytes_be());
+    let n = URL_SAFE_NO_PAD.encode(private_key.n().to_bytes(ByteOrder::BigEndian));
+    let e = URL_SAFE_NO_PAD.encode(private_key.e().to_bytes(ByteOrder::BigEndian));
     let resp = format!(
         "{{\"keys\": [{{\"kty\": \"RSA\",\"use\": \"sig\",\"e\": \"{}\",\"n\": \"{}\",\"alg\": \"RS256\",\"kid\": \"{}\"}}]}}",
         e, n, KID
