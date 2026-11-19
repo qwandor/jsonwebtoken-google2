@@ -109,17 +109,11 @@ mod tests {
         let (token, validator, _server) = setup(&claims);
         let result = validator.parse::<TokenClaims>(token.as_str()).await;
 
-        assert!(
-            if let ParserError::WrongToken(error) = result.err().unwrap() {
-                if let ErrorKind::ExpiredSignature = error.into_kind() {
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        );
+        let error = result.err().unwrap();
+        let ParserError::WrongToken(error) = error else {
+            panic!("Wrong error: {error}");
+        };
+        assert_eq!(error.into_kind(), ErrorKind::ExpiredSignature);
     }
 
     #[tokio::test]
@@ -128,17 +122,11 @@ mod tests {
         claims.iss = "https://some.com".to_owned();
         let (token, validator, _server) = setup(&claims);
         let result = validator.parse::<TokenClaims>(token.as_str()).await;
-        assert!(
-            if let ParserError::WrongToken(error) = result.err().unwrap() {
-                if let ErrorKind::InvalidIssuer = error.into_kind() {
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        );
+        let error = result.err().unwrap();
+        let ParserError::WrongToken(error) = error else {
+            panic!("Wrong error: {error}");
+        };
+        assert_eq!(error.into_kind(), ErrorKind::InvalidIssuer);
     }
 
     #[tokio::test]
@@ -147,16 +135,10 @@ mod tests {
         claims.aud = "other-id".to_owned();
         let (token, validator, _server) = setup(&claims);
         let result = validator.parse::<TokenClaims>(token.as_str()).await;
-        assert!(
-            if let ParserError::WrongToken(error) = result.err().unwrap() {
-                if let ErrorKind::InvalidAudience = error.into_kind() {
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        );
+        let error = result.err().unwrap();
+        let ParserError::WrongToken(error) = error else {
+            panic!("Wrong error: {error}");
+        };
+        assert_eq!(error.into_kind(), ErrorKind::InvalidAudience);
     }
 }
